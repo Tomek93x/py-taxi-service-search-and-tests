@@ -4,7 +4,6 @@ from django.shortcuts import render, get_object_or_404
 from django.urls import reverse_lazy
 from django.views import generic
 from django.contrib.auth.mixins import LoginRequiredMixin
-
 from .models import Driver, Car, Manufacturer
 from .forms import DriverCreationForm, DriverLicenseUpdateForm, CarForm
 
@@ -14,17 +13,15 @@ def index(request):
     num_drivers = Driver.objects.count()
     num_cars = Car.objects.count()
     num_manufacturers = Manufacturer.objects.count()
-
-    num_visits = request.session.get("num_visits", 0)
-    request.session["num_visits"] = num_visits + 1
-
+    visits = request.session.get("num_visits", 0)
+    request.session["num_visits"] = visits + 1
     context = {
         "num_drivers": num_drivers,
         "num_cars": num_cars,
         "num_manufacturers": num_manufacturers,
-        "num_visits": num_visits + 1,
+        "num_visits": visits + 1,
     }
-    return render(request, "taxi/index.html", context=context)
+    return render(request, "taxi/index.html", context)
 
 
 class ManufacturerListView(LoginRequiredMixin, generic.ListView):
@@ -35,15 +32,15 @@ class ManufacturerListView(LoginRequiredMixin, generic.ListView):
 
     def get_queryset(self):
         queryset = Manufacturer.objects.all()
-        search_query = self.request.GET.get("q")
-        if search_query:
-            queryset = queryset.filter(name__icontains=search_query)
+        q = self.request.GET.get("q")
+        if q:
+            queryset = queryset.filter(name__icontains=q)
         return queryset.order_by("id")
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["q"] = self.request.GET.get("q", "")
-        return context
+        ctx = super().get_context_data(**kwargs)
+        ctx["q"] = self.request.GET.get("q", "")
+        return ctx
 
 
 class ManufacturerCreateView(LoginRequiredMixin, generic.CreateView):
@@ -65,19 +62,20 @@ class ManufacturerDeleteView(LoginRequiredMixin, generic.DeleteView):
 
 class CarListView(LoginRequiredMixin, generic.ListView):
     model = Car
+    context_object_name = "car_list"
     paginate_by = 5
 
     def get_queryset(self):
         queryset = Car.objects.select_related("manufacturer").all()
-        search_query = self.request.GET.get("q")
-        if search_query:
-            queryset = queryset.filter(model__icontains=search_query)
+        q = self.request.GET.get("q")
+        if q:
+            queryset = queryset.filter(model__icontains=q)
         return queryset.order_by("id")
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["q"] = self.request.GET.get("q", "")
-        return context
+        ctx = super().get_context_data(**kwargs)
+        ctx["q"] = self.request.GET.get("q", "")
+        return ctx
 
 
 class CarDetailView(LoginRequiredMixin, generic.DetailView):
@@ -103,20 +101,20 @@ class CarDeleteView(LoginRequiredMixin, generic.DeleteView):
 
 class DriverListView(LoginRequiredMixin, generic.ListView):
     model = Driver
+    context_object_name = "driver_list"
     paginate_by = 5
 
     def get_queryset(self):
         queryset = Driver.objects.all()
-        search_query = self.request.GET.get("q")
-        if search_query:
-            queryset = queryset.filter(username__icontains=search_query)
+        q = self.request.GET.get("q")
+        if q:
+            queryset = queryset.filter(username__icontains=q)
         return queryset.order_by("id")
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["driver_list"] = context.get("object_list")  # Dla testów
-        context["q"] = self.request.GET.get("q", "")
-        return context
+        ctx = super().get_context_data(**kwargs)
+        ctx["q"] = self.request.GET.get("q", "")
+        return ctx
 
 
 class DriverDetailView(LoginRequiredMixin, generic.DetailView):
@@ -148,6 +146,4 @@ def toggle_assign_to_car(request, pk):
         driver.cars.remove(car)
     else:
         driver.cars.add(car)
-    return HttpResponseRedirect(
-        reverse_lazy("taxi:car-detail", args=[pk])
-    )
+    return HttpResponseRedirect(reverse_lazy("taxi:car-detail", args=[pk]))

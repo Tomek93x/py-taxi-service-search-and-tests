@@ -3,6 +3,9 @@ from django.urls import reverse
 from django.contrib.auth import get_user_model
 from .models import Driver, Car, Manufacturer
 
+def get_in_context(response, key):
+    """Returns context list by key or falls back to object_list."""
+    return response.context.get(key) or response.context.get("object_list")
 
 class DriverListSearchTest(TestCase):
     def setUp(self):
@@ -11,34 +14,32 @@ class DriverListSearchTest(TestCase):
         )
         self.client.login(username="testuser", password="testpass")
         self.driver1 = Driver.objects.create(
-            username="john_doe",
-            first_name="John",
-            last_name="Doe",
-            license_number="ABC12345"
+            username="john_doe", first_name="John",
+            last_name="Doe", license_number="ABC12345"
         )
         self.driver2 = Driver.objects.create(
-            username="alice",
-            first_name="Alice",
-            last_name="Smith",
-            license_number="XYZ98765"
+            username="alice", first_name="Alice",
+            last_name="Smith", license_number="XYZ98765"
         )
 
     def test_search_driver_by_username(self):
         url = reverse("taxi:driver-list")
         response = self.client.get(f"{url}?q=john")
-        self.assertIn(self.driver1, response.context["driver_list"])
-        self.assertNotIn(self.driver2, response.context["driver_list"])
+        driver_list = get_in_context(response, "driver_list")
+        self.assertIn(self.driver1, driver_list)
+        self.assertNotIn(self.driver2, driver_list)
 
     def test_search_driver_case_insensitive(self):
         url = reverse("taxi:driver-list")
         response = self.client.get(f"{url}?q=JOHN")
-        self.assertIn(self.driver1, response.context["driver_list"])
+        driver_list = get_in_context(response, "driver_list")
+        self.assertIn(self.driver1, driver_list)
 
     def test_search_driver_no_results(self):
         url = reverse("taxi:driver-list")
         response = self.client.get(f"{url}?q=notfound")
-        self.assertEqual(list(response.context["driver_list"]), [])
-
+        driver_list = get_in_context(response, "driver_list")
+        self.assertEqual(list(driver_list), [])
 
 class CarListSearchTest(TestCase):
     def setUp(self):
@@ -59,21 +60,22 @@ class CarListSearchTest(TestCase):
     def test_search_car_by_model(self):
         url = reverse("taxi:car-list")
         response = self.client.get(f"{url}?q=Corolla")
-        self.assertIn(self.car1, response.context["car_list"])
-        self.assertNotIn(self.car2, response.context["car_list"])
+        car_list = get_in_context(response, "car_list")
+        self.assertIn(self.car1, car_list)
+        self.assertNotIn(self.car2, car_list)
 
     def test_search_car_case_insensitive(self):
         url = reverse("taxi:car-list")
-        resp_low = self.client.get(f"{url}?q=corolla")
-        resp_up = self.client.get(f"{url}?q=COROLLA")
-        self.assertIn(self.car1, resp_low.context["car_list"])
-        self.assertIn(self.car1, resp_up.context["car_list"])
+        for q in ["corolla", "COROLLA"]:
+            response = self.client.get(f"{url}?q={q}")
+            car_list = get_in_context(response, "car_list")
+            self.assertIn(self.car1, car_list)
 
     def test_search_car_no_results(self):
         url = reverse("taxi:car-list")
         response = self.client.get(f"{url}?q=Tesla")
-        self.assertEqual(list(response.context["car_list"]), [])
-
+        car_list = get_in_context(response, "car_list")
+        self.assertEqual(list(car_list), [])
 
 class ManufacturerListSearchTest(TestCase):
     def setUp(self):
@@ -87,15 +89,18 @@ class ManufacturerListSearchTest(TestCase):
     def test_search_manufacturer_by_name(self):
         url = reverse("taxi:manufacturer-list")
         response = self.client.get(f"{url}?q=Ford")
-        self.assertIn(self.man1, response.context["manufacturer_list"])
-        self.assertNotIn(self.man2, response.context["manufacturer_list"])
+        man_list = get_in_context(response, "manufacturer_list")
+        self.assertIn(self.man1, man_list)
+        self.assertNotIn(self.man2, man_list)
 
     def test_search_manufacturer_case_insensitive(self):
         url = reverse("taxi:manufacturer-list")
         response = self.client.get(f"{url}?q=ford")
-        self.assertIn(self.man1, response.context["manufacturer_list"])
+        man_list = get_in_context(response, "manufacturer_list")
+        self.assertIn(self.man1, man_list)
 
     def test_search_manufacturer_no_results(self):
         url = reverse("taxi:manufacturer-list")
         response = self.client.get(f"{url}?q=Fiat")
-        self.assertEqual(list(response.context["manufacturer_list"]), [])
+        man_list = get_in_context(response, "manufacturer_list")
+        self.assertEqual(list(man_list), [])
