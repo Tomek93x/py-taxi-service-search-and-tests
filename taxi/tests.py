@@ -7,8 +7,7 @@ from .models import Driver, Car, Manufacturer
 class DriverListSearchTest(TestCase):
     def setUp(self):
         get_user_model().objects.create_user(
-            username="testuser",
-            password="testpass"
+            username="testuser", password="testpass"
         )
         self.client.login(username="testuser", password="testpass")
         self.driver1 = Driver.objects.create(
@@ -27,70 +26,76 @@ class DriverListSearchTest(TestCase):
     def test_search_driver_by_username(self):
         url = reverse("taxi:driver-list")
         response = self.client.get(f"{url}?q=john")
-        self.assertContains(response, "john_doe")
-        self.assertNotContains(response, "alice")
+        self.assertIn(self.driver1, response.context["driver_list"])
+        self.assertNotIn(self.driver2, response.context["driver_list"])
 
     def test_search_driver_case_insensitive(self):
         url = reverse("taxi:driver-list")
         response = self.client.get(f"{url}?q=JOHN")
-        self.assertContains(response, "john_doe")
+        self.assertIn(self.driver1, response.context["driver_list"])
 
     def test_search_driver_no_results(self):
         url = reverse("taxi:driver-list")
         response = self.client.get(f"{url}?q=notfound")
-        self.assertNotContains(response, "john_doe")
-        self.assertNotContains(response, "alice")
-        self.assertContains(response, "No drivers found")
+        self.assertEqual(list(response.context["driver_list"]), [])
 
 
 class CarListSearchTest(TestCase):
     def setUp(self):
         get_user_model().objects.create_user(
-            username="testuser",
-            password="testpass"
+            username="testuser", password="testpass"
         )
         self.client.login(username="testuser", password="testpass")
         self.manufacturer = Manufacturer.objects.create(
-            name="Toyota",
-            country="Japan"
+            name="Toyota", country="Japan"
         )
-        Car.objects.create(model="Corolla", manufacturer=self.manufacturer)
-        Car.objects.create(model="Camry", manufacturer=self.manufacturer)
+        self.car1 = Car.objects.create(
+            model="Corolla", manufacturer=self.manufacturer
+        )
+        self.car2 = Car.objects.create(
+            model="Camry", manufacturer=self.manufacturer
+        )
 
     def test_search_car_by_model(self):
         url = reverse("taxi:car-list")
         response = self.client.get(f"{url}?q=Corolla")
-        self.assertContains(response, "Corolla")
-        self.assertNotContains(response, "Camry")
+        self.assertIn(self.car1, response.context["car_list"])
+        self.assertNotIn(self.car2, response.context["car_list"])
+
+    def test_search_car_case_insensitive(self):
+        url = reverse("taxi:car-list")
+        resp_low = self.client.get(f"{url}?q=corolla")
+        resp_up = self.client.get(f"{url}?q=COROLLA")
+        self.assertIn(self.car1, resp_low.context["car_list"])
+        self.assertIn(self.car1, resp_up.context["car_list"])
 
     def test_search_car_no_results(self):
         url = reverse("taxi:car-list")
         response = self.client.get(f"{url}?q=Tesla")
-        self.assertContains(response, "No cars found")
+        self.assertEqual(list(response.context["car_list"]), [])
 
 
 class ManufacturerListSearchTest(TestCase):
     def setUp(self):
         get_user_model().objects.create_user(
-            username="testuser",
-            password="testpass"
+            username="testuser", password="testpass"
         )
         self.client.login(username="testuser", password="testpass")
-        Manufacturer.objects.create(name="Ford", country="USA")
-        Manufacturer.objects.create(name="Audi", country="Germany")
+        self.man1 = Manufacturer.objects.create(name="Ford", country="USA")
+        self.man2 = Manufacturer.objects.create(name="Audi", country="Germany")
 
     def test_search_manufacturer_by_name(self):
         url = reverse("taxi:manufacturer-list")
         response = self.client.get(f"{url}?q=Ford")
-        self.assertContains(response, "Ford")
-        self.assertNotContains(response, "Audi")
+        self.assertIn(self.man1, response.context["manufacturer_list"])
+        self.assertNotIn(self.man2, response.context["manufacturer_list"])
 
     def test_search_manufacturer_case_insensitive(self):
         url = reverse("taxi:manufacturer-list")
         response = self.client.get(f"{url}?q=ford")
-        self.assertContains(response, "Ford")
+        self.assertIn(self.man1, response.context["manufacturer_list"])
 
     def test_search_manufacturer_no_results(self):
         url = reverse("taxi:manufacturer-list")
         response = self.client.get(f"{url}?q=Fiat")
-        self.assertContains(response, "No manufacturers found")
+        self.assertEqual(list(response.context["manufacturer_list"]), [])

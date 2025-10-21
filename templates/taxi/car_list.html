@@ -8,10 +8,13 @@
     </a>
   </h1>
 
-  <!-- Search Form -->
-  <form method="get" class="mb-3">
+  <form method="get" class="mb-3" role="search">
+    <label for="car-search" class="visually-hidden">Search cars</label>
     <div class="input-group">
-      <input type="text" name="q" class="form-control" placeholder="Search by model..." value="{{ q }}">
+      <input type="text" name="q" id="car-search"
+          class="form-control"
+          placeholder="Search by model..."
+          value="{{ q }}">
       <button type="submit" class="btn btn-outline-secondary">Search</button>
       {% if q %}
         <a href="{% url 'taxi:car-list' %}" class="btn btn-outline-danger">Clear</a>
@@ -27,8 +30,8 @@
     <ul>
       {% for car in car_list %}
         <li>
-          <a href="{% url 'taxi:car-detail' pk=car.id %}">{{ car.id }}</a>
-          {{ car.model }} ({{ car.manufacturer.name }})
+          <a href="{% url 'taxi:car-detail' pk=car.id %}">{{ car.model }}</a>
+          ({{ car.manufacturer.name }})
         </li>
       {% endfor %}
     </ul>
@@ -40,16 +43,15 @@
     {% endif %}
   {% endif %}
 
-  <!-- Pagination (if exists) -->
   {% if is_paginated %}
     <nav aria-label="Search results pages">
       <ul class="pagination">
         {% if page_obj.has_previous %}
           <li class="page-item">
-            <a class="page-link" href="?{% if q %}q={{ q }}&{% endif %}page=1">First</a>
+            <a class="page-link" href="?{% if q %}q={{ q|urlencode }}&amp;{% endif %}page=1">First</a>
           </li>
           <li class="page-item">
-            <a class="page-link" href="?{% if q %}q={{ q }}&{% endif %}page={{ page_obj.previous_page_number }}">Previous</a>
+            <a class="page-link" href="?{% if q %}q={{ q|urlencode }}&amp;{% endif %}page={{ page_obj.previous_page_number }}">Previous</a>
           </li>
         {% endif %}
         <li class="page-item active">
@@ -57,14 +59,13 @@
         </li>
         {% if page_obj.has_next %}
           <li class="page-item">
-            <a class="page-link" href="?{% if q %}q={{ q }}&{% endif %}page={{ page_obj.next_page_number }}">Next</a>
+            <a class="page-link" href="?{% if q %}q={{ q|urlencode }}&amp;{% endif %}page={{ page_obj.next_page_number }}">Next</a>
           </li>
           <li class="page-item">
-            <a class="page-link" href="?{% if q %}q={{ q }}&{% endif %}page={{ page_obj.paginator.num_pages }}">Last</a>
+            <a class="page-link" href="?{% if q %}q={{ q|urlencode }}&amp;{% endif %}page={{ page_obj.paginator.num_pages }}">Last</a>
           </li>
         {% endif %}
       </ul>
     </nav>
   {% endif %}
-
 {% endblock %}
